@@ -21,6 +21,19 @@ interface Message {
     content: string;
 }
 
+const extractAnswer = (content: string): string => {
+    const markers = ["\nالافتراضات:", "\nالمصادر:", "\n⚠️"];
+    let result = content;
+    for (const marker of markers) {
+        const idx = result.indexOf(marker);
+        if (idx !== -1) {
+            result = result.substring(0, idx);
+        }
+    }
+    result = result.replace(/^الإجابة:\s*/, "");
+    return result.trim();
+};
+
 export default function ChatPage() {
     const { accessToken } = useAuth();
     const router = useRouter();
@@ -145,6 +158,9 @@ export default function ChatPage() {
                 buffer = lines.pop() || "";
 
                 for (const line of lines) {
+                    if (line.startsWith("event: done")) {
+                        break;
+                    }
                     if (line.startsWith("data: ")) {
                         const dataStr = line.slice(6).trim();
                         if (dataStr === "[DONE]") {
@@ -153,13 +169,14 @@ export default function ChatPage() {
 
                         try {
                             const parsed = JSON.parse(dataStr);
-                            if (parsed.text) {
+                            const chunk = parsed.delta ?? parsed.text;
+                            if (chunk) {
                                 setMessages(prev => prev.map(m =>
-                                    m.id === astMsgId ? { ...m, content: m.content + parsed.text } : m
+                                    m.id === astMsgId ? { ...m, content: m.content + chunk } : m
                                 ));
                             }
                         } catch {
-                            // Partial JSON, ignore and it might fix next chunk (though splitting by \n usually ensures full JSON lines)
+                            // Partial JSON, ignore
                         }
                     }
                 }
@@ -224,6 +241,7 @@ export default function ChatPage() {
                                 <div key={m.id || i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted text-foreground rounded-bl-none border border-border/50'}`}>
                                         {m.content || <span className="animate-pulse flex items-center h-5"><span className="w-1.5 h-1.5 bg-current rounded-full mr-1"></span><span className="w-1.5 h-1.5 bg-current rounded-full mr-1"></span><span className="w-1.5 h-1.5 bg-current rounded-full"></span></span>}
+                                        {/* {(m.role === 'assistant' ? extractAnswer(m.content) : m.content) || <span className="animate-pulse flex items-center h-5"><span className="w-1.5 h-1.5 bg-current rounded-full mr-1"></span><span className="w-1.5 h-1.5 bg-current rounded-full mr-1"></span><span className="w-1.5 h-1.5 bg-current rounded-full"></span></span>} */}
                                     </div>
                                 </div>
                             ))}
