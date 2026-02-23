@@ -55,13 +55,13 @@ export default function AdminPage() {
 
     const workspaces = workspacesData ?? [];
 
-    const { data: dlqData, isLoading: dlqLoading, refetch: refetchDlq } = useAuthedQuery<{ data: DLQMessage[] }>({
+    const { data: dlqData, isLoading: dlqLoading, refetch: refetchDlq } = useAuthedQuery<DLQMessage[]>({
         method: "GET",
         path: "/v1/admin/dlq",
         params: { query: { limit: 100 } },
         enabled: activeTab === "dlq"
     });
-    const dlqMessages = dlqData?.data || [];
+    const dlqMessages = dlqData || [];
 
     const handleDlqAction = async (message: DLQMessage, action: 'retry' | 'discard') => {
         setRetryingId(message.id);

@@ -304,14 +304,13 @@ function Step4Generate() {
     const { accessToken } = useAuth();
 
     // We need a template. Fetch templates.
-    const { data: templatesData } = useAuthedQuery<{ template_key: string, name: string }[]>({
+    const { data: templatesData } = useAuthedQuery<{ id: string, name: string }[]>({
         method: "GET",
         path: "/v1/templates" as const,
         params: TEMPLATES_QUERY_PARAMS
     });
 
     const templates = templatesData || [];
-
     const handleGenerate = async () => {
         if (templates.length === 0) {
             toast.error("No templates available. Please contact support.");
@@ -320,7 +319,11 @@ function Step4Generate() {
 
         setGenerating(true);
         const toastId = toast.loading("Generating content...");
-
+        const body = JSON.stringify({
+            template_key: templates[0].id,
+            title: "Onboarding Generation",
+            vars: { topic: "Company Overview" }
+        });
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/artifacts/generate:stream`, {
                 method: "POST",
@@ -328,11 +331,7 @@ function Step4Generate() {
                     "Content-Type": "application/json",
                     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
                 },
-                body: JSON.stringify({
-                    template_key: templates[0].template_key,
-                    title: "Onboarding Generation",
-                    vars: { topic: "Company Overview" }
-                })
+                body
             });
 
             if (!res.ok) throw new Error("Generation failed");
