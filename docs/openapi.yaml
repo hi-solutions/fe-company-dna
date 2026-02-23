@@ -1736,7 +1736,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContentSchedule'
-  /v1/schedules/{scheduleId}/posts:
+  /v1/schedules/{id}/posts:
     get:
       summary: List posts for a content schedule
       tags: [Schedules]
@@ -1744,7 +1744,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: scheduleId
+          name: id
           required: true
           schema:
             type: string
@@ -1775,7 +1775,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ScheduledPost'
-  /v1/schedules/{scheduleId}/posts/{postId}:
+  /v1/schedules/{id}/posts/{postId}:
     get:
       summary: Get a single scheduled post
       tags: [Schedules]
@@ -1783,7 +1783,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: scheduleId
+          name: id
           required: true
           schema:
             type: string
@@ -1810,7 +1810,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: scheduleId
+          name: id
           required: true
           schema:
             type: string
@@ -1841,7 +1841,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: scheduleId
+          name: id
           required: true
           schema:
             type: string
@@ -1855,7 +1855,7 @@ paths:
       responses:
         '200':
           description: Deleted
-  /v1/schedules/{scheduleId}/posts/{postId}/duplicate:
+  /v1/schedules/{id}/posts/{postId}/duplicate:
     post:
       summary: Duplicate scheduled post
       tags: [Schedules]
@@ -1863,7 +1863,7 @@ paths:
         - bearerAuth: []
       parameters:
         - in: path
-          name: scheduleId
+          name: id
           required: true
           schema:
             type: string

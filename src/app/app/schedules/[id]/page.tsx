@@ -29,7 +29,7 @@ interface Post {
 export default function SchedulePostsPage() {
     const params = useParams();
     const router = useRouter();
-    const scheduleId = params.id as string;
+    const id = params.id as string;
 
     const [editPost, setEditPost] = useState<Post | null>(null);
     const [editPlatform, setEditPlatform] = useState("");
@@ -43,9 +43,9 @@ export default function SchedulePostsPage() {
 
     const { data: postsData, isLoading, refetch } = useAuthedQuery<{ data: Post[] }>({
         method: "GET",
-        path: "/v1/schedules/{scheduleId}/posts" as const,
-        params: { path: { scheduleId } },
-        enabled: !!scheduleId
+        path: "/v1/schedules/{id}/posts" as const,
+        params: { path: { id } },
+        enabled: !!id
     });
 
     const posts = postsData?.data || [];
@@ -56,8 +56,8 @@ export default function SchedulePostsPage() {
             // we send the current time + 1 hour for the new publish_at to avoid instant conflicts
             const newPublishAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ error?: { error?: string } }>>;
-            const { error } = await apiClient.POST("/v1/schedules/{scheduleId}/posts/{postId}/duplicate", {
-                params: { path: { scheduleId, postId } },
+            const { error } = await apiClient.POST("/v1/schedules/{id}/posts/{postId}/duplicate", {
+                params: { path: { id, postId } },
                 body: { publish_at: newPublishAt }
             });
             if (error) throw new Error(error.error || "Failed to duplicate post");
@@ -74,8 +74,8 @@ export default function SchedulePostsPage() {
         const toastId = toast.loading("Deleting post...");
         try {
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ error?: { error?: string } }>>;
-            const { error } = await apiClient.DELETE("/v1/schedules/{scheduleId}/posts/{postId}", {
-                params: { path: { scheduleId, postId: deletePostId } }
+            const { error } = await apiClient.DELETE("/v1/schedules/{id}/posts/{postId}", {
+                params: { path: { id, postId: deletePostId } }
             });
             if (error) throw new Error(error.error || "Failed to delete post");
             toast.success("Post deleted", { id: toastId });
@@ -135,8 +135,8 @@ export default function SchedulePostsPage() {
         const toastId = toast.loading("Saving post...");
         try {
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ error?: { error?: string } }>>;
-            const { error } = await apiClient.PATCH("/v1/schedules/{scheduleId}/posts/{postId}", {
-                params: { path: { scheduleId, postId: editPost.id } },
+            const { error } = await apiClient.PATCH("/v1/schedules/{id}/posts/{postId}", {
+                params: { path: { id, postId: editPost.id } },
                 body: {
                     platform: editPlatform,
                     publish_at: new Date(editPublishAt).toISOString(),
@@ -164,7 +164,7 @@ export default function SchedulePostsPage() {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">Schedule Details</h1>
-                        <p className="text-sm text-muted-foreground font-mono mt-1">ID: {scheduleId}</p>
+                        <p className="text-sm text-muted-foreground font-mono mt-1">ID: {id}</p>
                     </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={refetch}>
