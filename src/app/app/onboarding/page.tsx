@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useOnboarding, OnboardingStep } from "@/hooks/use-onboarding";
+import { useOnboarding } from "@/hooks/use-onboarding";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { useAuthedQuery } from "@/hooks/use-authed-query";
 import { Input } from "@/components/ui/input";
 
 export default function OnboardingPage() {
-    const { step: apiStep, loading: onboardingLoading, hasSchedule } = useOnboarding();
+    const { step: currentStep, loading: onboardingLoading, hasSchedule, isForbidden } = useOnboarding();
     const router = useRouter();
     const { accessToken } = useAuth();
 
@@ -23,20 +23,12 @@ export default function OnboardingPage() {
         path: "/v1/workspace/users" as const
     });
 
-    const isEmployee = usersData?.data?.[0]?.role === "EMPLOYEE";
+    const isEmployee = usersData?.data?.[0]?.role === "EMPLOYEE" || isForbidden;
 
-    // We maintain a local step to allow animated transitions, but sync it with apiStep
-    const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
-
-    useEffect(() => {
-        if (!onboardingLoading) {
-            if (hasSchedule) {
-                router.push("/app/dashboard");
-            } else {
-                setCurrentStep(apiStep);
-            }
-        }
-    }, [apiStep, onboardingLoading, hasSchedule, router]);
+    // Redirect to dashboard when onboarding is complete
+    if (!onboardingLoading && hasSchedule) {
+        router.push("/app/dashboard");
+    }
 
     const steps = [
         { id: 1, title: "Upload DNA", icon: FileUp, description: "Add your company's knowledge" },
@@ -76,7 +68,7 @@ export default function OnboardingPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                 {/* Sidebar Progress */}
                 <div className="col-span-1 space-y-4">
-                    {steps.map((s, index) => {
+                    {steps.map((s) => {
                         const isCompleted = currentStep > s.id;
                         const isCurrent = currentStep === s.id;
                         const isUpcoming = currentStep < s.id;
@@ -199,17 +191,15 @@ function Step1Upload() {
 }
 
 function Step2Process() {
-    const { documents } = useOnboarding();
-    const router = useRouter();
+    const { refetch } = useOnboarding();
 
-    // Poll the status
+    // Poll the onboarding context at 5s intervals (ingestion step)
     useEffect(() => {
         const interval = setInterval(() => {
-            // A simple refresh to let useOnboarding re-evaluate
-            router.refresh();
-        }, 3000);
+            refetch();
+        }, 5000);
         return () => clearInterval(interval);
-    }, [router]);
+    }, [refetch]);
 
     return (
         <div className="flex flex-col h-full items-center justify-center text-center animate-in fade-in zoom-in-95 duration-500 py-12">
@@ -307,6 +297,8 @@ function Step3Chat() {
     );
 }
 
+const TEMPLATES_QUERY_PARAMS = { query: { limit: 10 } };
+
 function Step4Generate() {
     const [generating, setGenerating] = useState(false);
     const { accessToken } = useAuth();
@@ -315,7 +307,7 @@ function Step4Generate() {
     const { data: templatesData } = useAuthedQuery<{ data: { template_key: string, name: string }[] }>({
         method: "GET",
         path: "/v1/templates" as const,
-        params: { query: { limit: 10 } }
+        params: TEMPLATES_QUERY_PARAMS
     });
 
     const templates = templatesData?.data || [];
@@ -369,7 +361,7 @@ function Step4Generate() {
                 <Sparkles className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-2xl font-bold mb-3">Generate Content</h2>
-            <p className="text-muted-foreground max-w-md mb-8">Let's create your first piece of content. The AI will use your DNA guidelines and a default template to draft a post.</p>
+            <p className="text-muted-foreground max-w-md mb-8">Let&apos;s create your first piece of content. The AI will use your DNA guidelines and a default template to draft a post.</p>
 
             <Button size="lg" onClick={handleGenerate} disabled={generating || templates.length === 0} className="w-full max-w-xs group">
                 {generating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2 group-hover:text-yellow-300 transition-colors" />}

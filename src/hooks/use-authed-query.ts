@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { client } from "@/api/client";
 import { useAuth } from "@/auth/AuthProvider";
 
@@ -23,6 +23,14 @@ export function useAuthedQuery<T = unknown>({
     const [data, setData] = useState<T | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(enabled);
     const [error, setError] = useState<string | null>(null);
+    const [statusCode, setStatusCode] = useState<number | null>(null);
+
+    // Serialize params/body to stable strings so they don't cause re-renders
+    const paramsKey = JSON.stringify(params ?? null);
+    const bodyKey = JSON.stringify(body ?? null);
+
+    // Prevent duplicate in-flight requests
+    const inflightRef = useRef(false);
 
     const refetch = useCallback(async () => {
         if (!enabled || !isAuthenticated || !accessToken) {
@@ -30,27 +38,33 @@ export function useAuthedQuery<T = unknown>({
             return;
         }
 
+        if (inflightRef.current) return;
+        inflightRef.current = true;
+
         setIsLoading(true);
         setError(null);
 
         try {
-            // we use unknown to bypass complex openapi-fetch typing in a dynamic wrapper
+            const parsedParams = JSON.parse(paramsKey);
+            const parsedBody = JSON.parse(bodyKey);
+
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ data?: T; error?: { error?: string; message?: string }; response?: Response }>>;
             const response = await apiClient[method](path, {
-                params: params,
-                body: body,
+                params: parsedParams,
+                body: parsedBody,
             });
 
             if (response.error) {
-                // Check if it's a 401, openapi-fetch throws error objects but the client interceptor might handle it.
-                // Our AuthProvider handles 401s usually, but just in case:
-                if (response.response?.status === 401) {
+                const status = response.response?.status ?? 0;
+                setStatusCode(status);
+                if (status === 401) {
                     logout();
                     throw new Error("Unauthorized");
                 }
                 throw new Error(response.error.error || response.error.message || "An error occurred");
             }
 
+            setStatusCode(response.response?.status ?? 200);
             if (response.data !== undefined) {
                 setData(response.data);
             }
@@ -59,12 +73,13 @@ export function useAuthedQuery<T = unknown>({
             setError(err instanceof Error ? err.message : "Failed to fetch data");
         } finally {
             setIsLoading(false);
+            inflightRef.current = false;
         }
-    }, [method, path, body, params, enabled, isAuthenticated, accessToken, logout]);
+    }, [method, path, bodyKey, paramsKey, enabled, isAuthenticated, accessToken, logout]);
 
     useEffect(() => {
         refetch();
     }, [refetch]);
 
-    return { data, isLoading, error, refetch };
+    return { data, isLoading, error, statusCode, refetch };
 }

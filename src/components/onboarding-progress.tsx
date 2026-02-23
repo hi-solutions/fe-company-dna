@@ -2,15 +2,22 @@
 
 import Link from "next/link";
 import { useOnboarding } from "@/hooks/use-onboarding";
-import { usePathname } from "next/navigation";
-import { CheckCircle2, CircleDashed } from "lucide-react";
+import { CheckCircle2, CircleDashed, ShieldAlert } from "lucide-react";
 import clsx from "clsx";
 
 export function OnboardingProgress() {
-    const { step, loading, progressPercent, hasSchedule } = useOnboarding();
-    const pathname = usePathname();
+    const { loading, progressPercent, hasSchedule, isForbidden } = useOnboarding();
 
     if (loading || hasSchedule) return null;
+
+    if (isForbidden) {
+        return (
+            <div className="flex items-center gap-2 py-1 px-3 rounded-md text-xs text-muted-foreground">
+                <ShieldAlert className="h-4 w-4" />
+                <span>Waiting for admin setup</span>
+            </div>
+        );
+    }
 
     // Determine color based on progress
     let colorClass = "bg-red-500";

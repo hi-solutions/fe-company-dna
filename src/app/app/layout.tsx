@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/auth/AuthProvider";
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useOnboarding } from "@/hooks/use-onboarding";
+import { OnboardingProvider, useOnboarding } from "@/hooks/use-onboarding";
 import { OnboardingProgress } from "@/components/onboarding-progress";
 
 interface User {
@@ -25,7 +25,7 @@ interface Workspace {
     name: string;
 }
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayoutInner({ children }: { children: React.ReactNode }) {
     const { logout, isAuthenticated, isLoading } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
@@ -34,7 +34,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const { hasSchedule, loading: onboardingLoading } = useOnboarding();
+    const { hasSchedule, loading: onboardingLoading, isForbidden } = useOnboarding();
+
+    // Track if we already redirected to prevent repeated pushes
+    const hasRedirected = useRef(false);
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -56,18 +59,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             };
             loadWorkspaceContext();
         }
-    }, [isLoading, isAuthenticated, router, setWorkspace, setUser]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoading, isAuthenticated]);
 
     useEffect(() => {
         if (!isLoading && isAuthenticated && !onboardingLoading) {
             const allowedPaths = ["/app/onboarding", "/app/settings", "/app/billing", "/app/admin"];
             const isAllowed = allowedPaths.some(p => pathname.startsWith(p));
 
-            if (!hasSchedule && !isAllowed) {
+            // Employee with 403 — treat as waiting_for_admin, let them through
+            if (isForbidden) return;
+
+            if (!hasSchedule && !isAllowed && !hasRedirected.current) {
+                hasRedirected.current = true;
                 router.push("/app/onboarding");
             }
         }
-    }, [isLoading, isAuthenticated, onboardingLoading, hasSchedule, pathname, router]);
+    }, [isLoading, isAuthenticated, onboardingLoading, hasSchedule, pathname, router, isForbidden]);
+
+    // Reset redirect guard when pathname changes (user navigated manually)
+    useEffect(() => {
+        hasRedirected.current = false;
+    }, [pathname]);
 
     if (isLoading || !isAuthenticated) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
@@ -178,5 +191,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <OnboardingProvider>
+            <AppLayoutInner>{children}</AppLayoutInner>
+        </OnboardingProvider>
     );
 }
