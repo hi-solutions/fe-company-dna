@@ -66,7 +66,6 @@ export function useAuthedQuery<T = unknown>({
 
             setStatusCode(response.response?.status ?? 200);
             if (response.data !== undefined) {
-                console.log("response.data", response.data);
                 setData(response.data);
             }
         } catch (err: unknown) {
