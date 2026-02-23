@@ -49,10 +49,10 @@ export function useAuthedQuery<T = unknown>({
             const parsedBody = JSON.parse(bodyKey);
 
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ data?: T; error?: { error?: string; message?: string }; response?: Response }>>;
-            const response = await apiClient[method](path, {
-                params: parsedParams,
-                body: parsedBody,
-            });
+            const init: Record<string, unknown> = {};
+            if (parsedParams) init.params = parsedParams;
+            if (parsedBody) init.body = parsedBody;
+            const response = await apiClient[method](path, init);
 
             if (response.error) {
                 const status = response.response?.status ?? 0;
