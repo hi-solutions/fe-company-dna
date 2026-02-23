@@ -30,14 +30,14 @@ export default function ArtifactDetailPage() {
     const router = useRouter();
     const artifactId = params.id as string; // Changed id to artifactId
 
-    const { data: artifactData, isLoading } = useAuthedQuery<{ data: Artifact }>({ // Removed error, changed ArtifactDetail to Artifact
+    const { data: artifactData, isLoading } = useAuthedQuery<Artifact>({ // Removed error, changed ArtifactDetail to Artifact
         method: "GET",
         path: "/v1/artifacts/{id}" as unknown as never, // Changed type assertion
         params: { path: { id: artifactId } } as unknown as never, // Changed id to artifactId and added as any
         enabled: !!artifactId // Changed id to artifactId
     });
 
-    const artifact = artifactData?.data;
+    const artifact = artifactData ?? {} as Artifact;
 
     if (isLoading) {
         return (

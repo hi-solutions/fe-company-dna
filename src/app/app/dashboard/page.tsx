@@ -22,29 +22,29 @@ interface Usage {
 }
 
 export default function DashboardPage() {
-    const { data: workspaceData, isLoading: workspaceLoading } = useAuthedQuery<{ data: Workspace }>({
+    const { data: workspaceData, isLoading: workspaceLoading } = useAuthedQuery<Workspace>({
         method: "GET",
         path: "/v1/workspace/me" as const
     });
 
-    const { data: subscriptionData, isLoading: subscriptionLoading } = useAuthedQuery<{ data: Subscription }>({
+    const { data: subscriptionData, isLoading: subscriptionLoading } = useAuthedQuery<Subscription>({
         method: "GET",
         path: "/v1/billing/subscription" as const
     });
 
-    const { data: usageData, isLoading: usageLoading } = useAuthedQuery<{ data: Usage }>({
+    const { data: usageData, isLoading: usageLoading } = useAuthedQuery<Usage>({
         method: "GET",
         path: "/v1/billing/usage/current" as const
     });
 
-    const { data: healthData, error: healthError } = useAuthedQuery<{ data: unknown }>({
+    const { data: healthData, error: healthError } = useAuthedQuery<unknown>({
         method: "GET",
         path: "/healthz" as unknown as never
     });
 
-    const workspace = workspaceData?.data;
-    const subscription = subscriptionData?.data;
-    const usage = usageData?.data;
+    const workspace = workspaceData;
+    const subscription = subscriptionData ?? {} as Subscription;
+    const usage = usageData ?? {} as Usage;
 
     const loading = workspaceLoading || subscriptionLoading || usageLoading;
 

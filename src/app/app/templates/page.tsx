@@ -49,13 +49,13 @@ export default function TemplatesPage() {
     const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
 
 
-    const { data: templatesData, isLoading, refetch } = useAuthedQuery<{ data: Template[] }>({
+    const { data: templatesData, isLoading, refetch } = useAuthedQuery<Template[]>({
         method: "GET",
         path: "/v1/templates",
         params: { query: { limit: 100 } }
     });
 
-    const templates = templatesData?.data || [];
+    const templates = templatesData || [];
 
     const handleOpenEdit = (template?: Template) => {
         setEditingTemplate(template || { ...defaultTemplate });

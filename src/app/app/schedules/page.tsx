@@ -25,13 +25,13 @@ export default function SchedulesPage() {
     const { hasSchedule, loading: onboardingLoading } = useOnboarding();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const { data: schedulesData, isLoading, refetch } = useAuthedQuery<{ data: Schedule[] }>({
+    const { data: schedulesData, isLoading, refetch } = useAuthedQuery<Schedule[]>({
         method: "GET",
         path: "/v1/schedules",
         params: { query: { limit: 50 } }
     });
 
-    const schedules = schedulesData?.data || [];
+    const schedules = schedulesData || [];
 
     const handleAction = async (id: string, action: "pause" | "resume" | "rebuild" | "cancel-future") => {
         setActionLoading(`${id}-${action}`);

@@ -18,12 +18,12 @@ export default function OnboardingPage() {
     const { accessToken } = useAuth();
 
     // Fetch user role
-    const { data: usersData } = useAuthedQuery<{ data: { role: string }[] }>({
+    const { data: usersData } = useAuthedQuery<{ role: string }[]>({
         method: "GET",
         path: "/v1/workspace/users" as const
     });
 
-    const isEmployee = usersData?.data?.[0]?.role === "EMPLOYEE" || isForbidden;
+    const isEmployee = usersData?.[0]?.role === "EMPLOYEE" || isForbidden;
 
     // Redirect to dashboard when onboarding is complete
     if (!onboardingLoading && hasSchedule) {
@@ -304,13 +304,13 @@ function Step4Generate() {
     const { accessToken } = useAuth();
 
     // We need a template. Fetch templates.
-    const { data: templatesData } = useAuthedQuery<{ data: { template_key: string, name: string }[] }>({
+    const { data: templatesData } = useAuthedQuery<{ template_key: string, name: string }[]>({
         method: "GET",
         path: "/v1/templates" as const,
         params: TEMPLATES_QUERY_PARAMS
     });
 
-    const templates = templatesData?.data || [];
+    const templates = templatesData || [];
 
     const handleGenerate = async () => {
         if (templates.length === 0) {

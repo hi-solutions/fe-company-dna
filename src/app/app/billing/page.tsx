@@ -38,24 +38,24 @@ export default function BillingPage() {
     const [isManaging, setIsManaging] = useState(false);
     const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
 
-    const { data: plansData, isLoading: plansLoading } = useAuthedQuery<{ data: Plan[] }>({
+    const { data: plansData, isLoading: plansLoading } = useAuthedQuery<Plan[]>({
         method: "GET",
         path: "/v1/billing/plans"
     });
 
-    const { data: subData, isLoading: subLoading, refetch: refetchSub } = useAuthedQuery<{ data: Subscription }>({
+    const { data: subData, isLoading: subLoading, refetch: refetchSub } = useAuthedQuery<Subscription>({
         method: "GET",
         path: "/v1/billing/subscription"
     });
 
-    const { data: usageData, isLoading: usageLoading, refetch: refetchUsage } = useAuthedQuery<{ data: UsageMonthly }>({
+    const { data: usageData, isLoading: usageLoading, refetch: refetchUsage } = useAuthedQuery<UsageMonthly>({
         method: "GET",
         path: "/v1/billing/usage/current"
     });
 
-    const plans = plansData?.data || [];
-    const subscription = subData?.data;
-    const usage = usageData?.data;
+    const plans = plansData || [];
+    const subscription = subData ?? {} as Subscription;
+    const usage = usageData ?? {} as UsageMonthly;
 
     const currentPlan = plans.find(p => p.id === subscription?.plan_id);
 

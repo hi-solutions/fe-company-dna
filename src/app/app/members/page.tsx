@@ -37,12 +37,12 @@ export default function MembersPage() {
     const [editActive, setEditActive] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    const { data: usersData, isLoading, refetch } = useAuthedQuery<{ data: User[] }>({
+    const { data: usersData, isLoading, refetch } = useAuthedQuery<User[]>({
         method: "GET",
         path: "/v1/workspace/users"
     });
 
-    const users = usersData?.data || [];
+    const users = usersData || [];
 
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();

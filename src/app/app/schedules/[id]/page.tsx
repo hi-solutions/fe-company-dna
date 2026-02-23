@@ -41,14 +41,14 @@ export default function SchedulePostsPage() {
     const [deletePostId, setDeletePostId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const { data: postsData, isLoading, refetch } = useAuthedQuery<{ data: Post[] }>({
+    const { data: postsData, isLoading, refetch } = useAuthedQuery<Post[]>({
         method: "GET",
         path: "/v1/schedules/{id}/posts" as const,
         params: { path: { id } },
         enabled: !!id
     });
 
-    const posts = postsData?.data || [];
+    const posts = postsData || [];
 
     const handleDuplicate = async (postId: string) => {
         const toastId = toast.loading("Duplicating post...");

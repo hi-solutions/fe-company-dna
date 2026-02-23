@@ -48,14 +48,14 @@ export default function ChatPage() {
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = useState(true);
 
-    const { data: sessionsData, refetch: refetchSessions } = useAuthedQuery<{ data: Session[] }>({
+    const { data: sessionsData, refetch: refetchSessions } = useAuthedQuery<Session[]>({
         method: "GET",
         path: "/v1/chat/sessions",
         params: { query: { limit: 50 } }
     });
-    const sessions = sessionsData?.data || [];
+    const sessions = sessionsData || [];
 
-    const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useAuthedQuery<{ data: Message[] }>({
+    const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useAuthedQuery<Message[]>({
         method: "GET",
         path: "/v1/chat/sessions/{sessionId}/messages" as unknown as never,
         params: { path: { sessionId: activeSessionId || "" }, query: { limit: 100 } },
@@ -63,9 +63,9 @@ export default function ChatPage() {
     });
 
     useEffect(() => {
-        if (messagesData?.data) {
+        if (messagesData) {
             // Sort ascending by default depending on API, assuming chronological
-            setMessages(messagesData.data);
+            setMessages(messagesData);
         }
     }, [messagesData]);
 

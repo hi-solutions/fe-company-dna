@@ -15,12 +15,12 @@ export default function SettingsPage() {
     const { accessToken } = useAuth();
     const [activeTab, setActiveTab] = useState<"profile" | "security" | "workspace">("profile");
 
-    const { data: userData } = useAuthedQuery<{ data: { role: string } }>({
+    const { data: userData } = useAuthedQuery<{ role: string }>({
         method: "GET",
         path: "/v1/users/me"
     });
 
-    const role = userData?.data?.role;
+    const role = userData?.role;
     const isAdmin = role === "admin" || role === "super_admin";
 
     return (
@@ -69,7 +69,7 @@ export default function SettingsPage() {
 }
 
 function ProfileSettings() {
-    const { data: userData, isLoading: userLoading, refetch } = useAuthedQuery<{ data: { first_name: string; last_name: string; email: string } }>({
+    const { data: userData, isLoading: userLoading, refetch } = useAuthedQuery<{ first_name: string; last_name: string; email: string }>({
         method: "GET",
         path: "/v1/users/me"
     });
@@ -80,9 +80,9 @@ function ProfileSettings() {
 
     // Sync input state once data is loaded
     useState(() => {
-        if (userData?.data) {
-            setFirstName(userData.data.first_name || "");
-            setLastName(userData.data.last_name || "");
+        if (userData) {
+            setFirstName(userData.first_name || "");
+            setLastName(userData.last_name || "");
         }
     });
 
@@ -117,7 +117,7 @@ function ProfileSettings() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Email</Label>
-                        <Input value={userData?.data?.email || ""} disabled />
+                        <Input value={userData?.email || ""} disabled />
                         <p className="text-xs text-muted-foreground">Email address cannot be changed</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -209,7 +209,7 @@ function SecuritySettings() {
 }
 
 function WorkspaceSettings({ accessToken }: { accessToken: string | null }) {
-    const { data: wsData, isLoading: wsLoading, refetch } = useAuthedQuery<{ data: { name: string; logo_url: string } }>({
+    const { data: wsData, isLoading: wsLoading, refetch } = useAuthedQuery<{ name: string; logo_url: string }>({
         method: "GET",
         path: "/v1/workspace/me"
     });
@@ -221,8 +221,8 @@ function WorkspaceSettings({ accessToken }: { accessToken: string | null }) {
 
     // Sync input state once data is loaded
     useState(() => {
-        if (wsData?.data) {
-            setWsName(wsData.data.name || "");
+        if (wsData) {
+            setWsName(wsData.name || "");
         }
     });
 
@@ -279,7 +279,7 @@ function WorkspaceSettings({ accessToken }: { accessToken: string | null }) {
 
     if (wsLoading) return <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-muted-foreground mr-2" />Loading...</div>;
 
-    const workspace = wsData?.data;
+    const workspace = wsData;
 
     return (
         <div className="space-y-6">

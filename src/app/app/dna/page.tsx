@@ -45,22 +45,22 @@ export default function DNAPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [docToDelete, setDocToDelete] = useState<string | null>(null);
 
-    const { data: documentsData, isLoading, refetch } = useAuthedQuery<{ data: DNADoc[] }>({
+    const { data: documentsData, isLoading, refetch } = useAuthedQuery<DNADoc[]>({
         method: "GET",
         path: "/v1/dna/documents",
         params: { query: { limit: 50 } }
     });
 
-    const documents = documentsData?.data || [];
+    const documents = documentsData || [];
 
-    const { data: jobsData, isLoading: jobsLoading } = useAuthedQuery<{ data: DNAJob[] }>({
+    const { data: jobsData, isLoading: jobsLoading } = useAuthedQuery<DNAJob[]>({
         method: "GET",
         path: "/v1/dna/documents/{docId}/jobs" as unknown as never,
         params: { path: { docId: selectedDocId || "" } },
         enabled: jobsModalOpen && !!selectedDocId
     });
 
-    const jobs = jobsData?.data || [];
+    const jobs = jobsData || [];
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();

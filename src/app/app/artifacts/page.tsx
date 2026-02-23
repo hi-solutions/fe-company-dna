@@ -55,19 +55,19 @@ export default function ArtifactsPage() {
 
 
 
-    const { data: artifactsData, isLoading, refetch } = useAuthedQuery<{ data: Artifact[] }>({
+    const { data: artifactsData, isLoading, refetch } = useAuthedQuery<Artifact[]>({
         method: "GET",
         path: "/v1/artifacts",
         params: { query: { limit: 50 } }
     });
-    const artifacts = artifactsData?.data || [];
+    const artifacts = artifactsData || [];
 
-    const { data: templatesData } = useAuthedQuery<{ data: Template[] }>({
+    const { data: templatesData } = useAuthedQuery<Template[]>({
         method: "GET",
         path: "/v1/templates",
         params: { query: { limit: 50 } }
     });
-    const templates = templatesData?.data || [];
+    const templates = templatesData || [];
 
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();

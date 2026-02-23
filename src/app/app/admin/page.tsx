@@ -28,26 +28,32 @@ interface WorkspaceAdmin {
     is_active: boolean;
     created_at: string;
 }
-
+interface Stats {
+    total_workspaces: number;
+    active_users: number;
+    active_schedules: number;
+    dlq_messages: number;
+}
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<"overview" | "workspaces" | "dlq">("overview");
     const [retryingId, setRetryingId] = useState<string | null>(null);
 
     // Queries
-    const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useAuthedQuery<{ data: { total_workspaces: number; active_users: number; active_schedules: number; dlq_messages: number } }>({
+    const { data: allStates, isLoading: statsLoading, refetch: refetchStats } = useAuthedQuery<Stats>({
         method: "GET",
         path: "/v1/internal/admin/stats",
         enabled: activeTab === "overview"
     });
-    const stats = statsData?.data || {};
+    const stats = allStates ?? { total_workspaces: 0, active_users: 0, active_schedules: 0, dlq_messages: 0 };
+    const { data: workspacesData, isLoading: workspacesLoading, refetch: refetchWorkspaces } =
+        useAuthedQuery<WorkspaceAdmin[]>({
+            method: "GET",
+            path: "/v1/internal/admin/workspaces",
+            params: { query: { limit: 100 } },
+            enabled: activeTab === "workspaces",
+        });
 
-    const { data: workspacesData, isLoading: workspacesLoading, refetch: refetchWorkspaces } = useAuthedQuery<{ data: WorkspaceAdmin[] }>({
-        method: "GET",
-        path: "/v1/internal/admin/workspaces",
-        params: { query: { limit: 100 } },
-        enabled: activeTab === "workspaces"
-    });
-    const workspaces = workspacesData?.data || [];
+    const workspaces = workspacesData ?? [];
 
     const { data: dlqData, isLoading: dlqLoading, refetch: refetchDlq } = useAuthedQuery<{ data: DLQMessage[] }>({
         method: "GET",

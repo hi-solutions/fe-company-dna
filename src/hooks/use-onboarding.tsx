@@ -72,7 +72,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         isLoading: dnaLoading,
         statusCode: dnaStatus,
         refetch: refetchDna
-    } = useAuthedQuery<{ data: DNADoc[] }>({
+    } = useAuthedQuery<DNADoc[]>({
         method: "GET",
         path: "/v1/dna/documents",
         params: DNA_QUERY_PARAMS,
@@ -83,7 +83,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     const isForbidden = dnaStatus === 403;
 
     // 2. Check Chat Sessions
-    const { data: sessionsData, isLoading: chatLoading, refetch: refetchChat } = useAuthedQuery<{ data: ChatSession[] }>({
+    const { data: sessionsData, isLoading: chatLoading, refetch: refetchChat } = useAuthedQuery<ChatSession[]>({
         method: "GET",
         path: "/v1/chat/sessions",
         params: CHAT_QUERY_PARAMS,
@@ -91,7 +91,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     });
 
     // 3. Check Artifacts
-    const { data: artifactsData, isLoading: artifactsLoading, refetch: refetchArtifacts } = useAuthedQuery<{ data: Artifact[] }>({
+    const { data: artifactsData, isLoading: artifactsLoading, refetch: refetchArtifacts } = useAuthedQuery<Artifact[]>({
         method: "GET",
         path: "/v1/artifacts",
         params: ARTIFACTS_QUERY_PARAMS,
@@ -99,7 +99,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     });
 
     // 4. Check Schedules
-    const { data: schedulesData, isLoading: schedulesLoading, refetch: refetchSchedules } = useAuthedQuery<{ data: Schedule[] }>({
+    const { data: schedulesData, isLoading: schedulesLoading, refetch: refetchSchedules } = useAuthedQuery<Schedule[]>({
         method: "GET",
         path: "/v1/schedules",
         params: SCHEDULES_QUERY_PARAMS,
@@ -108,13 +108,13 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     const loading = dnaLoading || chatLoading || artifactsLoading || schedulesLoading;
 
-    const hasDNA = !!(documentsData?.data && documentsData.data.length > 0);
-    const hasIndexedDNA = !!(documentsData?.data && documentsData.data.some(d =>
+    const hasDNA = !!(documentsData && documentsData.length > 0);
+    const hasIndexedDNA = !!(documentsData && documentsData.some(d =>
         d.status === 'READY' || d.status === 'INDEXED' || d.status === 'indexed' || d.status === 'ready'
     ));
-    const hasChat = !!(sessionsData?.data && sessionsData.data.length > 0);
-    const hasArtifact = !!(artifactsData?.data && artifactsData.data.length > 0);
-    const hasSchedule = !!(schedulesData?.data && schedulesData.data.length > 0);
+    const hasChat = !!(sessionsData && sessionsData.length > 0);
+    const hasArtifact = !!(artifactsData && artifactsData.length > 0);
+    const hasSchedule = !!(schedulesData && schedulesData.length > 0);
 
     let step: OnboardingStep = 1;
     if (isForbidden) step = 1;
@@ -162,10 +162,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         hasChat,
         hasArtifact,
         hasSchedule,
-        documents: documentsData?.data,
-        sessions: sessionsData?.data,
-        artifacts: artifactsData?.data,
-        schedules: schedulesData?.data,
+        documents: documentsData ?? [],
+        sessions: sessionsData ?? [],
+        artifacts: artifactsData ?? [],
+        schedules: schedulesData ?? [],
         isForbidden,
         refetch: refetchAll,
     }), [step, loading, progressPercent, nextRoute, hasDNA, hasIndexedDNA, hasChat, hasArtifact, hasSchedule, documentsData, sessionsData, artifactsData, schedulesData, isForbidden, refetchAll]);
