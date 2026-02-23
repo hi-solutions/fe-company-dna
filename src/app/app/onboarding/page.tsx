@@ -304,7 +304,7 @@ function Step4Generate() {
     const { accessToken } = useAuth();
 
     // We need a template. Fetch templates.
-    const { data: templatesData } = useAuthedQuery<{ id: string, name: string }[]>({
+    const { data: templatesData } = useAuthedQuery<{ key: string, name: string }[]>({
         method: "GET",
         path: "/v1/templates" as const,
         params: TEMPLATES_QUERY_PARAMS
@@ -320,7 +320,7 @@ function Step4Generate() {
         setGenerating(true);
         const toastId = toast.loading("Generating content...");
         const body = JSON.stringify({
-            template_key: templates[0].id,
+            template_key: templates[0].key,
             title: "Onboarding Generation",
             vars: { topic: "Company Overview" }
         });
