@@ -1,0 +1,2019 @@
+openapi: 3.0.3
+info:
+  title: Hi-Solutions Company DNA API
+  version: 1.0.0
+  description: API specifications for Company OS, including Workspaces, DNA, Chat, Schedules, and Billing.
+servers:
+  - url: https://api.example.com
+    description: Production Server
+  - url: http://localhost:9001
+    description: Local Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    # ---------------- Auth ----------------
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [workspace_name, email, password, first_name, last_name]
+      properties:
+        workspace_name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        first_name:
+          type: string
+        last_name:
+          type: string
+
+    # ---------------- Workspace ----------------
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        logo_url:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, admin, employee]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    InviteUserRequest:
+      type: object
+      required: [email, first_name, last_name, role]
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, employee]
+    UpdateUserRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, employee]
+        is_active:
+          type: boolean
+
+    # ---------------- User Profile ----------------
+    UpdateMeRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    # ---------------- Forgot / Reset Password ----------------
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required: [token, new_password]
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    # ---------------- Workspace Settings ----------------
+    UpdateWorkspaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+
+    # ---------------- Billing (additional) ----------------
+    CheckoutSessionRequest:
+      type: object
+      required: [plan_id, success_url, cancel_url]
+      properties:
+        plan_id:
+          type: string
+        success_url:
+          type: string
+          format: uri
+        cancel_url:
+          type: string
+          format: uri
+    CheckoutSessionResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+    PortalSessionRequest:
+      type: object
+      required: [return_url]
+      properties:
+        return_url:
+          type: string
+          format: uri
+    PortalSessionResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+
+    # ---------------- Artifact Update ----------------
+    UpdateArtifactRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content_text:
+          type: string
+        content_json:
+          type: string
+
+    # ---------------- Billing ----------------
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        max_seats:
+          type: integer
+        monthly_tokens:
+          type: integer
+        price_unit:
+          type: string
+        price_amount:
+          type: integer
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        plan_id:
+          type: string
+        status:
+          type: string
+          enum: [active, trialing, past_due, canceled]
+        current_period_start:
+          type: string
+          format: date-time
+        current_period_end:
+          type: string
+          format: date-time
+    UsageMonthly:
+      type: object
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+        year:
+          type: integer
+        month:
+          type: integer
+        tokens_used:
+          type: integer
+
+    # ---------------- DNA ----------------
+    DNADocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        uploaded_by_user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        source_name:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+        storage_path:
+          type: string
+        status:
+          type: string
+          enum: [uploaded, processing, indexed, failed]
+        error_msg:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    CreateDocumentRequest:
+      type: object
+      required: [title, source_name, mime_type, storage_path]
+      properties:
+        title:
+          type: string
+        source_name:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+        storage_path:
+          type: string
+    CreateChunksRequest:
+      type: object
+      required: [chunks]
+      properties:
+        chunks:
+          type: array
+          items:
+            type: object
+            required: [chunk_index, text]
+            properties:
+              chunk_index:
+                type: integer
+              text:
+                type: string
+    DNAIngestionJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        attempts:
+          type: integer
+        is_dead_letter:
+          type: boolean
+        last_error:
+          type: string
+
+    # ---------------- Chat ----------------
+    ChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [active, archived]
+        last_message_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        input_tokens:
+          type: integer
+        output_tokens:
+          type: integer
+        client_message_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    CreateSessionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+    CreateMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        client_message_id:
+          type: string
+
+    # ---------------- Templates ----------------
+    PromptTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        language:
+          type: string
+        model:
+          type: string
+        system_prompt:
+          type: string
+        user_template:
+          type: string
+        version:
+          type: integer
+        is_active:
+          type: boolean
+        input_schema:
+          type: object
+          nullable: true
+          description: JSON schema describing required template variables and UI hints
+
+    # ---------------- Artifacts ----------------
+    Artifact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        template_key:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [generating, completed, failed]
+        input_vars:
+          type: object
+        content_text:
+          type: string
+        content_json:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    GenerateArtifactReq:
+      type: object
+      required: [template_key]
+      properties:
+        template_key:
+          type: string
+        title:
+          type: string
+        vars:
+          type: object
+          additionalProperties: {}
+        session_id:
+          type: string
+          format: uuid
+
+    # ---------------- Schedules ----------------
+    ContentSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        artifact_id:
+          type: string
+          format: uuid
+        timezone:
+          type: string
+        status:
+          type: string
+          enum: [draft, approved, scheduled, paused, completed]
+        approved_at:
+          type: string
+          format: date-time
+    ScheduledPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        platform:
+          type: string
+        publish_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [draft, queued, posting, posted, failed, canceled]
+        payload_json:
+          type: string
+        external_post_id:
+          type: string
+        attempts:
+          type: integer
+    ApproveArtifactReq:
+      type: object
+      required: [publish_start_date]
+      properties:
+        publish_start_date:
+          type: string
+          description: YYYY-MM-DD
+        timezone:
+          type: string
+        default_publish_time:
+          type: string
+          description: HH:MM
+        platform_overrides:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              time:
+                type: string
+    UpdatePostReq:
+      type: object
+      properties:
+        platform:
+          type: string
+        publish_at:
+          type: string
+          format: date-time
+        payload_json:
+          type: object
+          additionalProperties: {}
+        status:
+          type: string
+          enum: [queued, canceled]
+    DuplicatePostReq:
+      type: object
+      required: [publish_at]
+      properties:
+        publish_at:
+          type: string
+          format: date-time
+    RescheduleReq:
+      type: object
+      required: [shift_days]
+      properties:
+        shift_days:
+          type: integer
+
+    # ---------------- Admin ----------------
+    WorkspaceAdminResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        plan_name:
+          type: string
+        seats_used:
+          type: integer
+        max_seats:
+          type: integer
+        tokens_used_this_month:
+          type: integer
+        subscription_status:
+          type: string
+    AdminStatsResponse:
+      type: object
+      properties:
+        total_workspaces:
+          type: integer
+        active_subscriptions:
+          type: integer
+        total_users:
+          type: integer
+        total_tokens_used:
+          type: integer
+
+# ==========================================
+# ENDPOINTS
+# ==========================================
+paths:
+  # ---------------- Health ----------------
+  /healthz:
+    get:
+      summary: Health check
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /readyz:
+    get:
+      summary: Readiness check (DB & dependencies)
+      tags: [System]
+      security: []
+      responses:
+        '200':
+          description: Ready
+        '503':
+          description: Service Unavailable
+
+  # ---------------- Auth ----------------
+  /v1/auth/register:
+    post:
+      summary: Register new workspace and user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Created
+  /v1/auth/login:
+    post:
+      summary: Login user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Holds refresh_token
+        '401':
+          description: Unauthorized
+  /v1/auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Unauthorized
+  /v1/auth/logout:
+    post:
+      summary: Logout user
+      tags: [Auth]
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /v1/auth/forgot-password:
+    post:
+      summary: Request a password reset email
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: OK (always returns 200 to prevent email enumeration)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /v1/auth/reset-password:
+    post:
+      summary: Reset password using a token from the reset email
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+
+  # ---------------- Workspace ----------------
+  /v1/workspace/users:
+    get:
+      summary: List users in workspace
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /v1/workspace/users/invite:
+    post:
+      summary: Invite user to workspace (Admin only)
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteUserRequest'
+      responses:
+        '201':
+          description: Invited
+  /v1/workspace/users/{id}:
+    patch:
+      summary: Update workspace user (Admin only)
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: OK
+  /v1/workspaces/{id}:
+    delete:
+      summary: Delete workspace (Admin only)
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: X-Confirm-Delete
+          required: true
+          schema:
+            type: string
+          description: The exact name of the workspace to confirm deletion
+      responses:
+        '200':
+          description: Queued for deletion
+
+  # ---------------- User Profile ----------------
+  /v1/users/me:
+    get:
+      summary: Get authenticated user's profile
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    patch:
+      summary: Update authenticated user's profile (first_name, last_name)
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeRequest'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+  /v1/users/me/change-password:
+    post:
+      summary: Change authenticated user's password
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Current password incorrect or validation error
+
+  # ---------------- Workspace Settings ----------------
+  /v1/workspace/me:
+    get:
+      summary: Get current workspace
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+    patch:
+      summary: Update workspace settings (Admin only)
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspaceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+  /v1/workspace/logo:
+    post:
+      summary: Upload workspace logo (Admin only)
+      tags: [Workspaces]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                logo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Logo uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  logo_url:
+                    type: string
+
+  # ---------------- Billing ----------------
+  /v1/billing/plans:
+    get:
+      summary: Get available pricing plans
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+  /v1/billing/subscription:
+    get:
+      summary: Get current subscription
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+  /v1/billing/usage/current:
+    get:
+      summary: Get usage for current month
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageMonthly'
+  /v1/billing/usage/history:
+    get:
+      summary: Get usage history for a year (up to 12 months)
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Year to query (defaults to current year)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsageMonthly'
+  /v1/billing/checkout-session:
+    post:
+      summary: Create a billing checkout session (Admin only)
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '400':
+          description: Bad Request
+  /v1/billing/portal:
+    post:
+      summary: Create a billing portal session (Admin only)
+      tags: [Billing]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortalSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortalSessionResponse'
+  /v1/billing/webhook:
+    post:
+      summary: Billing provider webhook (no auth, verified by signature)
+      tags: [Billing]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid signature or payload
+
+  # ---------------- Internal Admin ----------------
+  /v1/internal/admin/workspaces:
+    get:
+      summary: Get all workspaces (Super Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceAdminResponse'
+  /v1/internal/admin/workspaces/{id}:
+    get:
+      summary: Get workspace details (Super Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/internal/admin/stats:
+    get:
+      summary: Get global stats (Super Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStatsResponse'
+
+  # ---------------- Chat ----------------
+  /v1/chat/sessions:
+    post:
+      summary: Create chat session
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+    get:
+      summary: Get chat sessions
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatSession'
+  /v1/chat/sessions/{sessionId}/messages:
+    get:
+      summary: Get chat messages
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: before
+          description: RFC3339 timestamp for pagination backward
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+    post:
+      summary: Post a new message sync
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+  /v1/chat/sessions/{sessionId}/messages:stream:
+    post:
+      summary: Post a message and stream assistant response
+      tags: [Chat]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '200':
+          description: Server-Sent Events stream. Events include 'chunk' (text token), 'done' (completion info), 'error'.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ---------------- DNA ----------------
+  /v1/dna/documents:
+    post:
+      summary: Create DNA Document record
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DNADocument'
+    get:
+      summary: List DNA Documents
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: before
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Next-Before:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DNADocument'
+  /v1/dna/documents/upload:
+    post:
+      summary: Upload DNA Document (multipart)
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_name:
+                  type: string
+      responses:
+        '201':
+          description: Uploaded and Document record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DNADocument'
+  /v1/dna/documents/{docId}:
+    get:
+      summary: Get DNA Document details
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/dna/documents/{docId}/jobs:
+    get:
+      summary: Get ingestion jobs for document
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DNAIngestionJob'
+  /v1/dna/documents/{docId}/ingest:
+    post:
+      summary: Enqueue document for background ingestion
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DNAIngestionJob'
+  /v1/dna/documents/{docId}/chunks:
+    post:
+      summary: Create parsed chunks (synchronous indexing)
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChunksRequest'
+      responses:
+        '201':
+          description: Created and indexed
+        '202':
+          description: Created but partially failed vectors
+    get:
+      summary: Get document chunks
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /v1/dna/documents/{docId}/reindex:
+    post:
+      summary: Mark document for reindexing
+      tags: [DNA]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: docId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+
+  # ---------------- Templates ----------------
+  /v1/templates:
+    get:
+      summary: List available templates
+      tags: [Templates]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: language
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PromptTemplate'
+    post:
+      summary: Create new workspace template (Admin only)
+      tags: [Templates]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptTemplate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplate'
+  /v1/templates/{key}:
+    get:
+      summary: Get template by key
+      tags: [Templates]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplate'
+    put:
+      summary: Update workspace template (Admin only)
+      tags: [Templates]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptTemplate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromptTemplate'
+    delete:
+      summary: Delete workspace template (Admin only)
+      tags: [Templates]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  # ---------------- Artifacts ----------------
+  /v1/artifacts:
+    get:
+      summary: List artifacts
+      tags: [Artifacts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: all
+          description: If true and user is admin, fetch for all workspace users
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: before
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Next-Before:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artifact'
+  /v1/artifacts/{id}:
+    get:
+      summary: Get artifact details
+      tags: [Artifacts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+    patch:
+      summary: Update artifact (owner or admin)
+      tags: [Artifacts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateArtifactRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '403':
+          description: Access denied
+        '404':
+          description: Not found
+    delete:
+      summary: Delete artifact (owner or admin)
+      tags: [Artifacts]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          description: Access denied
+        '404':
+          description: Not found
+  /v1/artifacts/{id}/approve:
+    post:
+      summary: Approve an artifact (schedule it for posting)
+      tags: [Artifacts, Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveArtifactReq'
+      responses:
+        '200':
+          description: OK
+  /v1/artifacts/generate:stream:
+    post:
+      summary: Generate artifact using template and stream results
+      tags: [Artifacts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateArtifactReq'
+      responses:
+        '200':
+          description: Server-Sent Events stream emitting artifact chunks
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ---------------- Schedules ----------------
+  /v1/schedules:
+    get:
+      summary: List content schedules
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: before
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Next-Before:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContentSchedule'
+  /v1/schedules/{id}:
+    get:
+      summary: Get content schedule
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentSchedule'
+  /v1/schedules/{scheduleId}/posts:
+    get:
+      summary: List posts for a content schedule
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: before
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Next-Before:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledPost'
+  /v1/schedules/{scheduleId}/posts/{postId}:
+    get:
+      summary: Get a single scheduled post
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledPost'
+        '404':
+          description: Not Found
+    patch:
+      summary: Edit a scheduled post
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledPost'
+    delete:
+      summary: Delete scheduled post
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Deleted
+  /v1/schedules/{scheduleId}/posts/{postId}/duplicate:
+    post:
+      summary: Duplicate scheduled post
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicatePostReq'
+      responses:
+        '201':
+          description: Duplicated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledPost'
+  /v1/schedules/{id}/pause:
+    post:
+      summary: Pause content schedule (Admin only)
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/schedules/{id}/resume:
+    post:
+      summary: Resume content schedule (Admin only)
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/schedules/{id}/cancel-future:
+    post:
+      summary: Cancel all future queued posts (Admin only)
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/schedules/{id}/reschedule:
+    post:
+      summary: Shift future post dates for schedule (Admin only)
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleReq'
+      responses:
+        '200':
+          description: OK
+  /v1/schedules/{id}/rebuild:
+    post:
+      summary: Rebuild content schedule and posts (Admin only)
+      tags: [Schedules]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+
+  # ---------------- DLQ (Admin) ----------------
+  /v1/admin/dlq:
+    get:
+      summary: List dead-letter queue items (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [ingestion, scheduler]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+  /v1/admin/dlq/{id}/retry:
+    post:
+      summary: Retry a dead-lettered job (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [ingestion, scheduler]
+      responses:
+        '200':
+          description: OK

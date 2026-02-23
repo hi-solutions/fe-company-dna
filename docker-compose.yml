@@ -1,0 +1,12 @@
+services:
+  fe-company-dna:
+    image: ahmedemad1992/fe-company-dna:latest
+    container_name: fe-company-dna
+    restart: unless-stopped
+    volumes:
+      - /data/company-dna/frontend/.env:/data/company-dna/frontend/.env:ro
+    ports:
+      - "${FRONT_PORT:-8003}:${FRONT_PORT:-8003}"
+    env_file:
+      - /data/company-dna/frontend/.env
+  

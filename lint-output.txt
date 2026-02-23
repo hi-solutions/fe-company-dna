@@ -1,0 +1,122 @@
+
+> hi-dna-frontend@0.1.0 lint
+> eslint
+
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(auth)/forgot-password/page.tsx
+  25:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(auth)/login/page.tsx
+  32:39  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  37:23  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  68:32  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(auth)/register/page.tsx
+  39:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(auth)/reset-password/page.tsx
+  12:8   warning  'Link' is defined but never used          @typescript-eslint/no-unused-vars
+  49:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:42  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(marketing)/page.tsx
+   3:22  warning  'BrainCircuit' is defined but never used                         @typescript-eslint/no-unused-vars
+   3:64  warning  'Briefcase' is defined but never used                            @typescript-eslint/no-unused-vars
+  12:37  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/(marketing)/pricing/page.tsx
+  54:105  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/access-denied/page.tsx
+  3:8  warning  'Link' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/admin/page.tsx
+   37:96  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:46  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/artifacts/[id]/page.tsx
+   3:10  warning  'useEffect' is defined but never used     @typescript-eslint/no-unused-vars
+   3:21  warning  'useState' is defined but never used      @typescript-eslint/no-unused-vars
+  36:39  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/artifacts/page.tsx
+   75:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+  125:38  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  135:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  162:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  171:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/billing/page.tsx
+   18:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/chat/page.tsx
+    9:10   warning  'transform' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   24:26   warning  'isAuthenticated' is assigned a value but never used                                                               @typescript-eslint/no-unused-vars
+   44:59   error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   64:8    warning  React Hook useEffect has a missing dependency: 'scrollToBottom'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   91:30   error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  162:34   warning  'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  168:23   error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  263:102  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                    react/no-unescaped-entities
+  263:111  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                    react/no-unescaped-entities
+  263:151  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                    react/no-unescaped-entities
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/dashboard/page.tsx
+   3:10  warning  'FileText' is defined but never used                             @typescript-eslint/no-unused-vars
+   3:20  warning  'Database' is defined but never used                             @typescript-eslint/no-unused-vars
+   3:42  warning  'ChevronRight' is defined but never used                         @typescript-eslint/no-unused-vars
+   3:56  warning  'Bell' is defined but never used                                 @typescript-eslint/no-unused-vars
+   3:62  warning  'Zap' is defined but never used                                  @typescript-eslint/no-unused-vars
+   3:67  warning  'FileJson2' is defined but never used                            @typescript-eslint/no-unused-vars
+   3:78  warning  'Clock' is defined but never used                                @typescript-eslint/no-unused-vars
+   3:85  warning  'CheckCircle2' is defined but never used                         @typescript-eslint/no-unused-vars
+   4:10  warning  'client' is defined but never used                               @typescript-eslint/no-unused-vars
+  66:89  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/dna/page.tsx
+   14:40  warning  'MoreVertical' is defined but never used  @typescript-eslint/no-unused-vars
+   54:51  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:35  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  113:48  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:50  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/layout.tsx
+  54:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/layout.tsx:54:13
+  52 |             router.push("/login");
+  53 |         } else if (isAuthenticated) {
+> 54 |             loadWorkspaceContext();
+     |             ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  55 |         }
+  56 |     }, [isLoading, isAuthenticated, router, loadWorkspaceContext]);
+  57 |  react-hooks/set-state-in-effect
+
+/Users/ahmedemad/Desktop/Sources/hi-dna-frontend/src/app/app/schedules/[id]/page.tsx
+  103:18  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  113:18  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 68 problems (42 errors, 26 warnings)
+
