@@ -1,110 +1,202 @@
 /**
- * DNA text chunking utility.
+ * Section-aware DNA document chunker.
  *
- * Splits a Markdown-like DNA document into chunks suitable for the
- * POST /v1/dna/documents/:docId/chunks endpoint.
- *
- * Rules:
- *  - chunkSizeChars  = 1200  (max characters per chunk)
- *  - overlapChars    = 150   (overlap between consecutive chunks)
- *  - Headings (lines starting with #) stay with their section content.
- *  - Output: { chunk_index: number; text: string }[]
+ * Strategy:
+ *  1. Normalise whitespace and enforce a max document size guard.
+ *  2. Split the document on Markdown headings (levels 1-6) into sections.
+ *     Text before the first heading is wrapped under "# General".
+ *  3. Each section is chunked independently. The heading is prepended to
+ *     every sub-chunk so downstream embeddings always carry section context.
+ *  4. Within a section, split boundaries are chosen in priority order:
+ *     paragraph (\n\n) → list item (\n- / \n* ) → sentence (". ") → hard limit.
+ *  5. Consecutive chunks overlap by OVERLAP characters for retrieval continuity.
+ *  6. Every chunk carries metadata (section name, order, document type, source).
  */
 
 export interface ChunkItem {
     chunk_index: number;
     text: string;
+    section: string;
+    section_order: number;
+    document_type: "company_dna";
+    source: "manual" | "upload";
 }
 
 const CHUNK_SIZE = 1200;
 const OVERLAP = 150;
+const MAX_DOCUMENT_LENGTH = 50_000;
 
-/**
- * Split `text` on Markdown heading boundaries, producing an array of
- * sections where each starts with its heading line.
- */
-function splitBySections(text: string): string[] {
+const HEADING_RE = /^#{1,6}\s+(.+)$/;
+
+// ---------------------------------------------------------------------------
+// Normalisation
+// ---------------------------------------------------------------------------
+
+function normalise(text: string): string {
+    return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// ---------------------------------------------------------------------------
+// Section splitting
+// ---------------------------------------------------------------------------
+
+interface Section {
+    heading: string;
+    name: string;
+    body: string;
+}
+
+function splitBySections(text: string): Section[] {
     const lines = text.split("\n");
-    const sections: string[] = [];
-    let current: string[] = [];
+    const sections: Section[] = [];
+    let currentHeading = "";
+    let currentName = "";
+    let currentBody: string[] = [];
 
-    for (const line of lines) {
-        if (/^#{1,6}\s/.test(line) && current.length > 0) {
-            sections.push(current.join("\n").trim());
-            current = [];
+    const flush = () => {
+        const body = currentBody.join("\n").trim();
+        if (body || currentHeading) {
+            const heading = currentHeading || "# General";
+            const name = currentName || "general";
+            sections.push({ heading, name, body });
         }
-        current.push(line);
+        currentBody = [];
+    };
+
+    for (const raw of lines) {
+        const line = raw;
+        const trimmed = line.trimStart();
+        const match = HEADING_RE.exec(trimmed);
+
+        if (match) {
+            flush();
+            currentHeading = trimmed;
+            currentName = match[1].trim().toLowerCase();
+        } else {
+            currentBody.push(line);
+        }
     }
 
-    if (current.length > 0) {
-        const trimmed = current.join("\n").trim();
-        if (trimmed) sections.push(trimmed);
-    }
-
+    flush();
     return sections;
 }
 
-/**
- * Chunk a single section. If it exceeds CHUNK_SIZE it is split with overlap.
- * The heading is prepended to every sub-chunk so context is preserved.
- */
-function chunkSection(section: string): string[] {
-    if (section.length <= CHUNK_SIZE) return [section];
+// ---------------------------------------------------------------------------
+// Section chunking
+// ---------------------------------------------------------------------------
 
-    // Extract the heading (first line that starts with #)
-    const firstNewline = section.indexOf("\n");
-    let heading = "";
-    let body = section;
+function findBestSplit(body: string, offset: number, limit: number): number {
+    const end = Math.min(offset + limit, body.length);
+    if (end >= body.length) return body.length;
 
-    if (firstNewline > 0 && /^#{1,6}\s/.test(section)) {
-        heading = section.slice(0, firstNewline).trim();
-        body = section.slice(firstNewline + 1).trim();
+    const window = body.slice(offset, end);
+
+    // 1. Paragraph boundary
+    const para = window.lastIndexOf("\n\n");
+    if (para > 0) return offset + para;
+
+    // 2. List boundary
+    const listDash = window.lastIndexOf("\n- ");
+    const listStar = window.lastIndexOf("\n* ");
+    const listBound = Math.max(listDash, listStar);
+    if (listBound > 0) return offset + listBound;
+
+    // 3. Sentence boundary
+    const sent = window.lastIndexOf(". ");
+    if (sent > 0) return offset + sent + 1;
+
+    // 4. Hard limit
+    return end;
+}
+
+function chunkSection(section: Section): string[] {
+    const { heading, body } = section;
+
+    if (!body) return [];
+
+    const headingPrefix = `${heading}\n\n`;
+    const maxBodyLen = CHUNK_SIZE - headingPrefix.length;
+
+    if (maxBodyLen <= 0) return [`${heading}\n\n${body.slice(0, CHUNK_SIZE)}`];
+
+    if (body.length <= maxBodyLen) {
+        return [`${headingPrefix}${body}`];
     }
 
     const chunks: string[] = [];
     let offset = 0;
+    let lastEnd = -1;
 
     while (offset < body.length) {
-        const maxLen = heading
-            ? CHUNK_SIZE - heading.length - 2 // 2 for \n\n
-            : CHUNK_SIZE;
+        const end = findBestSplit(body, offset, maxBodyLen);
+        const slice = body.slice(offset, end).trim();
 
-        let end = Math.min(offset + maxLen, body.length);
-
-        // Try to break at a sentence/paragraph boundary
-        if (end < body.length) {
-            const candidate = body.lastIndexOf("\n\n", end);
-            if (candidate > offset) {
-                end = candidate;
-            } else {
-                const sentEnd = body.lastIndexOf(". ", end);
-                if (sentEnd > offset) {
-                    end = sentEnd + 1; // include the period
-                }
-            }
+        if (slice && slice !== heading.trim()) {
+            chunks.push(`${headingPrefix}${slice}`);
         }
 
-        const slice = body.slice(offset, end).trim();
-        const chunkText = heading ? `${heading}\n\n${slice}` : slice;
-        if (chunkText) chunks.push(chunkText);
+        if (end === lastEnd) break;
+        lastEnd = end;
 
-        // Advance with overlap
-        offset = Math.max(offset + 1, end - OVERLAP);
+        if (end >= body.length) break;
+
+        offset = Math.max(end - OVERLAP, offset + 1);
+        if (offset < 0) offset = 0;
     }
 
     return chunks;
 }
 
-/**
- * Main entry point: compile a DNA document string into indexable chunks.
- */
-export function chunkDnaText(text: string): ChunkItem[] {
-    const sections = splitBySections(text);
-    const rawChunks: string[] = [];
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
-    for (const section of sections) {
-        rawChunks.push(...chunkSection(section));
+export function chunkDnaText(
+    text: string,
+    source: "manual" | "upload" = "manual",
+): ChunkItem[] {
+    const normalised = normalise(text);
+
+    if (normalised.length > MAX_DOCUMENT_LENGTH) {
+        throw new Error("DNA document exceeds maximum allowed length (50 000 characters)");
     }
 
-    return rawChunks.map((t, i) => ({ chunk_index: i, text: t }));
+    if (!normalised) return [];
+
+    const sections = splitBySections(normalised);
+    const items: ChunkItem[] = [];
+    let globalIndex = 0;
+
+    for (let sectionOrder = 0; sectionOrder < sections.length; sectionOrder++) {
+        const section = sections[sectionOrder];
+        const sectionChunks = chunkSection(section);
+
+        for (const chunkText of sectionChunks) {
+            if (chunkText.length > CHUNK_SIZE) {
+                items.push({
+                    chunk_index: globalIndex++,
+                    text: chunkText.slice(0, CHUNK_SIZE),
+                    section: section.name,
+                    section_order: sectionOrder,
+                    document_type: "company_dna",
+                    source,
+                });
+                continue;
+            }
+
+            items.push({
+                chunk_index: globalIndex++,
+                text: chunkText,
+                section: section.name,
+                section_order: sectionOrder,
+                document_type: "company_dna",
+                source,
+            });
+        }
+    }
+
+    return items.filter((c) => {
+        const stripped = c.text.replace(/^#{1,6}\s+.+\n*/m, "").trim();
+        return stripped.length > 0;
+    });
 }
