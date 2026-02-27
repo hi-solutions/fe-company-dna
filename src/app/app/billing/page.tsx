@@ -12,11 +12,10 @@ import { CreditCard, ExternalLink, RefreshCw, Zap, TrendingUp, ChevronRight, Che
 interface Plan {
     id: string;
     name: string;
-    description: string;
-    monthly_price: number;
-    annual_price?: number;
-    features: Record<string, string | number>;
-    is_active: boolean;
+    max_seats: number;
+    monthly_tokens: number;
+    price_unit: string;
+    price_amount: number;
 }
 
 interface Subscription {
@@ -238,15 +237,15 @@ export default function BillingPage() {
                                 )}
                                 <CardHeader>
                                     <CardTitle>{plan.name}</CardTitle>
-                                    <CardDescription>{plan.description}</CardDescription>
+                                    <CardDescription>{plan.name}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-1 space-y-4">
                                     <div className="flex items-baseline text-3xl font-bold">
-                                        ${(plan.monthly_price / 100).toFixed(2)}
+                                        ${(plan.price_amount / 100).toFixed(2)}
                                         <span className="ml-1 text-sm font-medium text-muted-foreground">/mo</span>
                                     </div>
                                     <ul className="space-y-2 text-sm text-muted-foreground">
-                                        {Object.entries(plan.features || {}).map(([key, val]) => (
+                                        {Object.entries(plan.monthly_tokens || {}).map(([key, val]) => (
                                             <li key={key} className="flex items-start">
                                                 <CheckCircle2 className="h-4 w-4 text-primary mr-2 mt-0.5 shrink-0" />
                                                 <span className="capitalize">{key.replace(/_/g, ' ')}: {val === -1 ? 'Unlimited' : val}</span>

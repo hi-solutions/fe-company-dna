@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, ChevronRight, FileUp, Cpu, MessageSquare, Sparkles, CalendarCheck, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, FileUp, Cpu, MessageSquare, Sparkles, CalendarCheck, Loader2, PenLine } from "lucide-react";
 import { client } from "@/api/client";
 import { useAuth } from "@/auth/AuthProvider";
 import { useAuthedQuery } from "@/hooks/use-authed-query";
 import { Input } from "@/components/ui/input";
+import { DnaManualForm } from "./dna-manual-form";
 
 export default function OnboardingPage() {
     const { step: currentStep, loading: onboardingLoading, hasSchedule, isForbidden } = useOnboarding();
@@ -109,7 +110,10 @@ export default function OnboardingPage() {
 
 // === STEP COMPONENTS === //
 
+type DnaInputMode = "upload" | "manual";
+
 function Step1Upload() {
+    const [mode, setMode] = useState<DnaInputMode>("upload");
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
 
@@ -152,40 +156,82 @@ function Step1Upload() {
         }
     };
 
+    const handleManualSuccess = () => {
+        window.location.reload();
+    };
+
     return (
         <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8">
+            <div className="mb-6">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <FileUp className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Upload Company Knowledge</h2>
-                <p className="text-muted-foreground max-w-lg">Upload your first document (e.g., employee handbook, product spec, or brand guidelines) to teach the AI about your company.</p>
+                <h2 className="text-2xl font-bold mb-2">Add Company Knowledge</h2>
+                <p className="text-muted-foreground max-w-lg">Choose how to add your Company DNA — upload a document or write it manually.</p>
             </div>
 
-            <form onSubmit={handleUpload} className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto space-y-6">
-                <div className="border-2 border-dashed border-input rounded-xl p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer relative">
-                    <input
-                        type="file"
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        accept=".pdf,.txt,.docx,.csv"
-                    />
-                    <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-                    {file ? (
-                        <p className="font-medium text-primary">{file.name}</p>
-                    ) : (
-                        <div>
-                            <p className="font-medium mb-1">Click or drag file to upload</p>
-                            <p className="text-xs text-muted-foreground">PDF, TXT, DOCX up to 10MB</p>
-                        </div>
-                    )}
-                </div>
+            {/* Segmented control toggle */}
+            <div className="flex rounded-lg border bg-muted/50 p-1 mb-6 max-w-md">
+                <button
+                    type="button"
+                    onClick={() => setMode("upload")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        mode === "upload"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                    <FileUp className="w-4 h-4" />
+                    Upload PDF
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setMode("manual")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                        mode === "manual"
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                    }`}
+                >
+                    <PenLine className="w-4 h-4" />
+                    Write Manually
+                </button>
+            </div>
 
-                <Button type="submit" size="lg" disabled={!file || uploading} className="w-full">
-                    {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Upload & Continue"}
-                    {!uploading && <ChevronRight className="ml-2 h-4 w-4" />}
-                </Button>
-            </form>
+            {/* Upload PDF flow (existing) */}
+            {mode === "upload" && (
+                <form onSubmit={handleUpload} className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto space-y-6">
+                    <div className="border-2 border-dashed border-input rounded-xl p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer relative">
+                        <input
+                            type="file"
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            accept=".pdf,.txt,.docx,.csv"
+                        />
+                        <FileUp className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+                        {file ? (
+                            <p className="font-medium text-primary">{file.name}</p>
+                        ) : (
+                            <div>
+                                <p className="font-medium mb-1">Click or drag file to upload</p>
+                                <p className="text-xs text-muted-foreground">PDF, TXT, DOCX up to 10MB</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <Button type="submit" size="lg" disabled={!file || uploading} className="w-full">
+                        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Upload & Continue"}
+                        {!uploading && <ChevronRight className="ml-2 h-4 w-4" />}
+                    </Button>
+                </form>
+            )}
+
+            {/* Write manually flow (new) */}
+            {mode === "manual" && (
+                <div className="flex-1 max-w-lg w-full mx-auto overflow-y-auto max-h-[60vh] pr-1">
+                    <DnaManualForm onSuccess={handleManualSuccess} />
+                </div>
+            )}
         </div>
     );
 }
