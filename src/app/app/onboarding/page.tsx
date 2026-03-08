@@ -24,7 +24,7 @@ export default function OnboardingPage() {
         path: "/v1/workspace/users" as const
     });
 
-    const isEmployee = usersData?.[0]?.role === "EMPLOYEE" || isForbidden;
+    const isEmployee = usersData?.[0]?.role === "employee" || isForbidden;
 
     // Redirect to dashboard when onboarding is complete
     if (!onboardingLoading && hasSchedule) {
@@ -116,6 +116,7 @@ function Step1Upload() {
     const [mode, setMode] = useState<DnaInputMode>("upload");
     const [uploading, setUploading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const { accessToken } = useAuth();
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -129,25 +130,41 @@ function Step1Upload() {
             formData.append("file", file);
             formData.append("source_name", file.name);
 
-            const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ data?: { id?: string }, error?: { error?: string } }>>;
-            const { data, error } = await apiClient.POST("/v1/dna/documents/upload", {
-                body: formData as unknown as never
+            // Use native fetch for multipart/form-data — openapi-fetch JSON-serializes the body
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+            const uploadRes = await fetch(`${baseUrl}/v1/dna/documents/upload`, {
+                method: "POST",
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+                body: formData,
+                credentials: 'include',
             });
 
-            if (error) throw new Error(error.error || "Upload failed");
+            if (!uploadRes.ok) {
+                const errBody = await uploadRes.json().catch(() => ({}));
+                throw new Error((errBody as { error?: string }).error || "Upload failed");
+            }
+
+            const uploadData = await uploadRes.json() as { document?: { id?: string } };
+            const docId = uploadData.document?.id;
 
             // Auto-start ingestion
-            if (data?.id) {
+            if (docId) {
                 toast.loading("Starting indexing process...", { id: toastId });
-                const { error: ingestError } = await apiClient.POST("/v1/dna/documents/{docId}/ingest", {
-                    params: { path: { docId: data.id } }
+                const ingestRes = await fetch(`${baseUrl}/v1/dna/documents/${docId}/ingest`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                    },
+                    credentials: 'include',
                 });
-                if (ingestError) throw new Error(ingestError.error || "Failed to start ingestion");
+                if (!ingestRes.ok) {
+                    const errBody = await ingestRes.json().catch(() => ({}));
+                    throw new Error((errBody as { error?: string }).error || "Failed to start ingestion");
+                }
             }
 
             toast.success("Document uploaded and indexing started", { id: toastId });
-            // The polling from useOnboarding should eventually update the step to 2
-            // To make it instant in UI without waiting for refetch:
             window.location.reload();
         } catch (err: unknown) {
             toast.error(err instanceof Error ? err.message : "Upload failed", { id: toastId });
@@ -175,11 +192,10 @@ function Step1Upload() {
                 <button
                     type="button"
                     onClick={() => setMode("upload")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        mode === "upload"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === "upload"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                 >
                     <FileUp className="w-4 h-4" />
                     Upload PDF
@@ -187,11 +203,10 @@ function Step1Upload() {
                 <button
                     type="button"
                     onClick={() => setMode("manual")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                        mode === "manual"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === "manual"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                 >
                     <PenLine className="w-4 h-4" />
                     Write Manually

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CreditCard, ExternalLink, RefreshCw, Zap, TrendingUp, ChevronRight, CheckCircle2 } from "lucide-react";
+import { CreditCard, ExternalLink, RefreshCw, TrendingUp, ChevronRight, CheckCircle2 } from "lucide-react";
 
 interface Plan {
     id: string;
@@ -22,15 +22,15 @@ interface Subscription {
     id: string;
     plan_id: string;
     status: string;
+    current_period_start: string;
     current_period_end: string;
-    cancel_at_period_end: boolean;
 }
 
 interface UsageMonthly {
+    workspace_id: string;
     year: number;
     month: number;
     tokens_used: number;
-    storage_used_bytes: number;
 }
 
 export default function BillingPage() {
@@ -106,14 +106,6 @@ export default function BillingPage() {
         }
     };
 
-    const formatBytes = (bytes: number) => {
-        if (!bytes) return "0 B";
-        const k = 1024;
-        const sizes = ["B", "KB", "MB", "GB", "TB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    };
-
     const isLoading = plansLoading || subLoading || usageLoading;
 
     if (isLoading) {
@@ -128,6 +120,10 @@ export default function BillingPage() {
             </div>
         );
     }
+
+    // Calculate token usage percentage against plan limit
+    const tokenLimit = currentPlan?.monthly_tokens || 100000;
+    const tokenPercent = Math.min(((usage?.tokens_used || 0) / tokenLimit) * 100, 100);
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto pb-10">
@@ -167,11 +163,6 @@ export default function BillingPage() {
                                     <span className="text-muted-foreground">Renews on</span>
                                     <span className="font-medium text-foreground">{new Date(subscription.current_period_end).toLocaleDateString()}</span>
                                 </div>
-                                {subscription.cancel_at_period_end && (
-                                    <div className="p-3 bg-warning/10 text-warning border border-warning/20 rounded-md mt-4">
-                                        Your subscription will cancel at the end of the current billing period.
-                                    </div>
-                                )}
                             </>
                         ) : (
                             <div className="py-4 text-center text-muted-foreground">
@@ -201,21 +192,12 @@ export default function BillingPage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="flex items-center text-muted-foreground"><TrendingUp className="mr-2 h-4 w-4" /> AI Tokens Used</span>
-                                <span className="font-medium text-foreground">{usage?.tokens_used?.toLocaleString() || 0}</span>
+                                <span className="font-medium text-foreground">
+                                    {(usage?.tokens_used || 0).toLocaleString()} / {tokenLimit.toLocaleString()}
+                                </span>
                             </div>
                             <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                                {/* Since limit isn't provided directly in usage struct easily, just show bar without limit or calculate from plan max */}
-                                <div className="bg-primary h-full" style={{ width: `Math.min((usage?.tokens_used || 0) / 100000 * 100, 100)%` }} />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="flex items-center text-muted-foreground"><Zap className="mr-2 h-4 w-4" /> Storage Used</span>
-                                <span className="font-medium text-foreground">{formatBytes(usage?.storage_used_bytes || 0)}</span>
-                            </div>
-                            <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                                <div className="bg-orange-500 h-full" style={{ width: `Math.min((usage?.storage_used_bytes || 0) / (5*1024*1024*1024) * 100, 100)%` }} />
+                                <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${tokenPercent}%` }} />
                             </div>
                         </div>
                     </CardContent>
@@ -245,12 +227,14 @@ export default function BillingPage() {
                                         <span className="ml-1 text-sm font-medium text-muted-foreground">/mo</span>
                                     </div>
                                     <ul className="space-y-2 text-sm text-muted-foreground">
-                                        {Object.entries(plan.monthly_tokens || {}).map(([key, val]) => (
-                                            <li key={key} className="flex items-start">
-                                                <CheckCircle2 className="h-4 w-4 text-primary mr-2 mt-0.5 shrink-0" />
-                                                <span className="capitalize">{key.replace(/_/g, ' ')}: {val === -1 ? 'Unlimited' : val}</span>
-                                            </li>
-                                        ))}
+                                        <li className="flex items-start">
+                                            <CheckCircle2 className="h-4 w-4 text-primary mr-2 mt-0.5 shrink-0" />
+                                            <span>Up to {plan.max_seats} seat{plan.max_seats !== 1 ? 's' : ''}</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <CheckCircle2 className="h-4 w-4 text-primary mr-2 mt-0.5 shrink-0" />
+                                            <span>{plan.monthly_tokens === -1 ? 'Unlimited' : plan.monthly_tokens.toLocaleString()} tokens/mo</span>
+                                        </li>
                                     </ul>
                                 </CardContent>
                                 <CardFooter>
@@ -259,7 +243,7 @@ export default function BillingPage() {
                                     ) : (
                                         <Button
                                             className="w-full group"
-                                            variant={isCurrentPlan ? "outline" : "default"}
+                                            variant="default"
                                             disabled={isCheckingOut === plan.id}
                                             onClick={() => handleCheckout(plan.id)}
                                         >

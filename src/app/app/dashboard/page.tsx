@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { CreditCard, Building2, Activity, CalendarDays } from "lucide-react";
 import { useAuthedQuery } from "@/hooks/use-authed-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,10 +38,14 @@ export default function DashboardPage() {
         path: "/v1/billing/usage/current" as const
     });
 
-    const { data: healthData, error: healthError } = useAuthedQuery<unknown>({
-        method: "GET",
-        path: "/healthz" as unknown as never
-    });
+    // Health check uses direct fetch since /healthz doesn't need auth
+    const [healthOk, setHealthOk] = useState<boolean | null>(null);
+    useEffect(() => {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+        fetch(`${baseUrl}/healthz`)
+            .then(res => setHealthOk(res.ok))
+            .catch(() => setHealthOk(false));
+    }, []);
 
     const workspace = workspaceData;
     const subscription = subscriptionData ?? {} as Subscription;
@@ -66,9 +71,9 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex items-center space-x-2 text-sm">
                     <span className="text-muted-foreground">API Status:</span>
-                    {healthError ? (
+                    {healthOk === false ? (
                         <span className="flex items-center text-destructive"><span className="h-2 w-2 rounded-full bg-destructive mr-2 animate-pulse"></span> Offline</span>
-                    ) : healthData ? (
+                    ) : healthOk === true ? (
                         <span className="flex items-center text-success"><span className="h-2 w-2 rounded-full bg-success mr-2"></span> Online</span>
                     ) : (
                         <span className="flex items-center text-muted-foreground"><span className="h-2 w-2 rounded-full bg-muted-foreground mr-2"></span> Checking...</span>

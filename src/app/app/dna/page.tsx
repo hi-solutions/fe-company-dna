@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { client } from "@/api/client";
+import { useAuth } from "@/auth/AuthProvider";
 import { useAuthedQuery } from "@/hooks/use-authed-query";
 import { useRouter } from "next/navigation";
 import { useOnboarding } from "@/hooks/use-onboarding";
@@ -25,11 +26,9 @@ interface DNADoc {
 }
 
 interface DNAJob {
-    id: string;
     status: string;
-    attempt_count: number;
-    error_message?: string;
-    created_at: string;
+    attempts: number;
+    last_error?: string;
     updated_at: string;
 }
 
@@ -38,6 +37,7 @@ export default function DNAPage() {
     const [file, setFile] = useState<File | null>(null);
     const router = useRouter();
     const { hasSchedule, loading: onboardingLoading } = useOnboarding();
+    const { accessToken } = useAuth();
 
     const [jobsModalOpen, setJobsModalOpen] = useState(false);
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -53,14 +53,12 @@ export default function DNAPage() {
 
     const documents = documentsData || [];
 
-    const { data: jobsData, isLoading: jobsLoading } = useAuthedQuery<DNAJob[]>({
+    // Backend returns a single job object, not an array
+    const { data: jobData, isLoading: jobsLoading } = useAuthedQuery<DNAJob>({
         method: "GET",
-        path: "/v1/dna/documents/{docId}/jobs" as unknown as never,
-        params: { path: { docId: selectedDocId || "" } },
+        path: `/v1/dna/documents/${selectedDocId}/jobs` as never,
         enabled: jobsModalOpen && !!selectedDocId
     });
-
-    const jobs = jobsData || [];
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -74,19 +72,29 @@ export default function DNAPage() {
             formData.append("file", file);
             formData.append("source_name", file.name);
 
-            const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ data?: { id?: string }, error?: { error?: string } }>>;
-            const { data, error } = await apiClient.POST("/v1/dna/documents/upload", {
-                body: formData as unknown as never
+            // Use native fetch for multipart/form-data
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+            const uploadRes = await fetch(`${baseUrl}/v1/dna/documents/upload`, {
+                method: "POST",
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+                body: formData,
+                credentials: 'include',
             });
 
-            if (error) throw new Error(error.error || "Upload failed");
+            if (!uploadRes.ok) {
+                const errBody = await uploadRes.json().catch(() => ({}));
+                throw new Error((errBody as { error?: string }).error || "Upload failed");
+            }
+
+            const uploadData = await uploadRes.json() as { document?: { id?: string } };
+            const docId = uploadData.document?.id;
 
             toast.success("Document uploaded successfully", { id: toastId });
             setFile(null);
 
-            if (data?.id) {
+            if (docId) {
                 toast.loading("Starting ingestion...", { id: toastId });
-                await handleIngest(data.id, toastId);
+                await handleIngest(docId, toastId);
             } else {
                 refetch();
             }
@@ -117,7 +125,7 @@ export default function DNAPage() {
         const toastId = toast.loading("Deleting document...");
         try {
             const apiClient = client as unknown as Record<string, (url: string, init?: unknown) => Promise<{ error?: { error?: string } }>>;
-            const { error } = await apiClient.DELETE("/v1/dna/documents/{docId}", {
+            const { error } = await apiClient.DELETE("/v1/dna/documents/{docId}" as never, {
                 params: { path: { docId: docToDelete } }
             });
             if (error) throw new Error(error.error || "Failed to delete document");
@@ -239,45 +247,39 @@ export default function DNAPage() {
             <Dialog open={jobsModalOpen} onOpenChange={setJobsModalOpen}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>Document Jobs</DialogTitle>
-                        <DialogDescription>View the background processing jobs for this document.</DialogDescription>
+                        <DialogTitle>Document Job Status</DialogTitle>
+                        <DialogDescription>View the latest background processing job for this document.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         {jobsLoading ? (
-                            <p className="text-center text-muted-foreground">Loading jobs...</p>
-                        ) : jobs.length === 0 ? (
+                            <p className="text-center text-muted-foreground">Loading job status...</p>
+                        ) : !jobData ? (
                             <p className="text-center text-muted-foreground">No jobs found for this document.</p>
                         ) : (
-                            <div className="rounded-md border border-border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Job ID</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Attempts</TableHead>
-                                            <TableHead>Created At</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {jobs.map((job) => (
-                                            <TableRow key={job.id}>
-                                                <TableCell className="font-mono text-xs">{job.id}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={job.status === 'completed' ? 'success' : job.status === 'failed' ? 'destructive' : 'secondary'} className="capitalize">
-                                                        {job.status}
-                                                    </Badge>
-                                                    {job.error_message && (
-                                                        <p className="text-xs text-destructive mt-1 break-all">{job.error_message}</p>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>{job.attempt_count}</TableCell>
-                                                <TableCell className="text-muted-foreground text-xs">
-                                                    {new Date(job.created_at).toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Status</span>
+                                    <Badge
+                                        variant={jobData.status === 'completed' ? 'success' : jobData.status === 'failed' ? 'destructive' : 'secondary'}
+                                        className="capitalize"
+                                    >
+                                        {jobData.status}
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Attempts</span>
+                                    <span className="font-medium">{jobData.attempts}</span>
+                                </div>
+                                {jobData.last_error && (
+                                    <div className="text-sm">
+                                        <span className="text-muted-foreground">Error: </span>
+                                        <span className="text-destructive break-all">{jobData.last_error}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Last Updated</span>
+                                    <span className="text-muted-foreground text-xs">{new Date(jobData.updated_at).toLocaleString()}</span>
+                                </div>
                             </div>
                         )}
                     </div>

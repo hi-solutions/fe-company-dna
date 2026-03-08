@@ -110,7 +110,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
     const hasDNA = !!(documentsData && documentsData.length > 0);
     const hasIndexedDNA = !!(documentsData && documentsData.some(d =>
-        d.status === 'READY' || d.status === 'INDEXED' || d.status === 'indexed' || d.status === 'ready'
+        d.status === 'indexed'
     ));
     const hasChat = !!(sessionsData && sessionsData.length > 0);
     const hasArtifact = !!(artifactsData && artifactsData.length > 0);

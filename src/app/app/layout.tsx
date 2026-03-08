@@ -49,9 +49,9 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                     if (wsData) {
                         setWorkspace(wsData as Workspace);
                     }
-                    const { data: usersInfo } = await client.GET("/v1/workspace/users");
-                    if (usersInfo && usersInfo.length > 0) {
-                        setUser(usersInfo[0] as User);
+                    const { data: userInfo } = await client.GET("/v1/users/me");
+                    if (userInfo) {
+                        setUser(userInfo as User);
                     }
                 } catch (e) {
                     console.error(e);
